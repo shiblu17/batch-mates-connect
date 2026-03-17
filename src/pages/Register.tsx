@@ -1,14 +1,22 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { DEPARTMENTS, HALLS, TSHIRT_SIZES, PAYMENT_NUMBERS } from "@/lib/constants";
-import { CheckCircle, Upload, Phone, CreditCard } from "lucide-react";
+import { CheckCircle, Upload, Phone, CreditCard, ChevronLeft, ChevronRight, User, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+const STEPS = [
+  { id: 1, label: "ব্যক্তিগত", icon: User },
+  { id: 2, label: "ছবি", icon: Camera },
+  { id: 3, label: "পেমেন্ট", icon: CreditCard },
+];
 
 export default function RegisterPage() {
   const { toast } = useToast();
+  const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState({
     name: "",
     roll: "",
@@ -21,7 +29,10 @@ export default function RegisterPage() {
     senderNumber: "",
   });
 
-  const set = (key: string, value: string) => setForm((f) => ({ ...f, [key]: value }));
+  const set = (key: string, value: string) => {
+    setForm((f) => ({ ...f, [key]: value }));
+    setErrors((e) => ({ ...e, [key]: "" }));
+  };
 
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -34,39 +45,61 @@ export default function RegisterPage() {
     setPhotoPreview(URL.createObjectURL(file));
   };
 
+  const validateStep1 = () => {
+    const errs: Record<string, string> = {};
+    if (!form.name.trim()) errs.name = "নাম লিখো";
+    const rollNum = parseInt(form.roll);
+    if (!form.roll || isNaN(rollNum) || rollNum < 1 || rollNum > 9999) errs.roll = "সঠিক রোল নম্বর দাও (১-৯৯৯৯)";
+    if (!form.phone || !/^01\d{9}$/.test(form.phone)) errs.phone = "সঠিক ফোন নম্বর দাও";
+    if (!form.department) errs.department = "ডিপার্টমেন্ট সিলেক্ট করো";
+    if (!form.hall) errs.hall = "হল সিলেক্ট করো";
+    if (!form.tshirtSize) errs.tshirtSize = "টি-শার্ট সাইজ সিলেক্ট করো";
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const validateStep3 = () => {
+    const errs: Record<string, string> = {};
+    if (!form.txId.trim()) errs.txId = "ট্রানজেকশন আইডি দাও";
+    if (!form.senderNumber || !/^01\d{9}$/.test(form.senderNumber)) errs.senderNumber = "সঠিক সেন্ডার নম্বর দাও";
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const nextStep = () => {
+    if (step === 1 && !validateStep1()) return;
+    if (step < 3) setStep(step + 1);
+  };
+
+  const prevStep = () => {
+    if (step > 1) setStep(step - 1);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Basic validation
-    const rollNum = parseInt(form.roll);
-    if (isNaN(rollNum) || rollNum < 1 || rollNum > 9999) {
-      toast({ title: "সঠিক রোল নম্বর দিন", variant: "destructive" });
-      return;
-    }
-    if (!form.department || !form.hall || !form.tshirtSize) {
-      toast({ title: "সব ফিল্ড পূরণ করুন", variant: "destructive" });
-      return;
-    }
-    if (!form.txId || !form.senderNumber) {
-      toast({ title: "পেমেন্ট তথ্য দিন", variant: "destructive" });
-      return;
-    }
+    if (!validateStep3()) return;
     setSubmitted(true);
   };
 
   if (submitted) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center pb-20 md:pb-0">
+      <div className="min-h-[80vh] flex items-center justify-center pb-20 md:pb-0 px-4">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           className="text-center p-8"
         >
-          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-secondary/10">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", delay: 0.2 }}
+            className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-secondary/10"
+          >
             <CheckCircle className="h-10 w-10 text-secondary" />
-          </div>
+          </motion.div>
           <h2 className="font-display text-2xl font-bold mb-2">রেজিস্ট্রেশন সম্পন্ন! 🎉</h2>
           <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-            তোমার পেমেন্ট ভেরিফাই হলে আইডি কার্ড ডাউনলোড করতে পারবে। <br />
+            তোমার পেমেন্ট ভেরিফাই হলে আইডি কার্ড ডাউনলোড করতে পারবে।<br />
             <strong>রোল: {form.roll}</strong> দিয়ে স্ট্যাটাস চেক করো।
           </p>
         </motion.div>
@@ -75,128 +108,235 @@ export default function RegisterPage() {
   }
 
   const inputClass =
-    "w-full rounded-xl border border-input bg-card px-4 py-3 text-sm font-body placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition";
+    "w-full rounded-xl border bg-card px-4 py-3 text-sm font-body placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all";
   const labelClass = "block text-sm font-semibold mb-1.5";
+  const errorClass = "text-xs text-destructive mt-1 font-medium";
 
   return (
-    <div className="container max-w-lg py-8 pb-24 md:pb-8">
+    <div className="container max-w-lg py-6 pb-24 md:pb-8 px-4">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="font-display text-2xl font-bold mb-1">রেজিস্ট্রেশন</h1>
-        <p className="text-muted-foreground text-sm mb-6">ব্যাচ ডে-তে যোগ দিতে নিচের ফর্ম পূরণ করো</p>
+        <p className="text-muted-foreground text-sm mb-5">ব্যাচ ডে-তে যোগ দিতে নিচের ফর্ম পূরণ করো</p>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Personal Info */}
-          <div className="rounded-2xl bg-surface p-5 space-y-4">
-            <h3 className="font-display font-semibold text-sm text-muted-foreground uppercase tracking-wider">ব্যক্তিগত তথ্য</h3>
-            <div>
-              <label className={labelClass}>নাম *</label>
-              <input className={inputClass} placeholder="তোমার পুরো নাম" required value={form.name} onChange={(e) => set("name", e.target.value)} />
-            </div>
-            <div>
-              <label className={labelClass}>রোল নম্বর *</label>
-              <input className={inputClass} placeholder="যেমন: 1234" required type="number" value={form.roll} onChange={(e) => set("roll", e.target.value)} />
-            </div>
-            <div>
-              <label className={labelClass}>ফোন নম্বর *</label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <input className={`${inputClass} pl-10`} placeholder="01XXXXXXXXX" required value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+        {/* Stepper */}
+        <div className="flex items-center justify-between mb-6 px-2">
+          {STEPS.map((s, i) => {
+            const active = step === s.id;
+            const done = step > s.id;
+            return (
+              <div key={s.id} className="flex items-center">
+                <div className="flex flex-col items-center">
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold transition-all ${
+                    done ? "bg-secondary text-secondary-foreground" :
+                    active ? "bg-primary text-primary-foreground shadow-md" :
+                    "bg-muted text-muted-foreground"
+                  }`}>
+                    {done ? <CheckCircle className="h-5 w-5" /> : <s.icon className="h-4 w-4" />}
+                  </div>
+                  <span className={`text-[10px] mt-1 font-semibold ${active ? "text-primary" : "text-muted-foreground"}`}>
+                    {s.label}
+                  </span>
+                </div>
+                {i < STEPS.length - 1 && (
+                  <div className={`w-12 sm:w-20 h-0.5 mx-2 rounded-full transition-colors ${
+                    step > s.id ? "bg-secondary" : "bg-border"
+                  }`} />
+                )}
               </div>
-            </div>
-            <div>
-              <label className={labelClass}>ডিপার্টমেন্ট *</label>
-              <select className={inputClass} required value={form.department} onChange={(e) => set("department", e.target.value)}>
-                <option value="">সিলেক্ট করো</option>
-                {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className={labelClass}>হল *</label>
-              <select className={inputClass} required value={form.hall} onChange={(e) => set("hall", e.target.value)}>
-                <option value="">সিলেক্ট করো</option>
-                {HALLS.map((h) => <option key={h} value={h}>{h}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className={labelClass}>টি-শার্ট সাইজ *</label>
-              <div className="flex gap-2 flex-wrap">
-                {TSHIRT_SIZES.map((s) => (
+            );
+          })}
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <AnimatePresence mode="wait">
+            {step === 1 && (
+              <motion.div
+                key="step1"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="rounded-2xl bg-surface p-5 space-y-4"
+              >
+                <h3 className="font-display font-semibold text-sm text-muted-foreground uppercase tracking-wider">ব্যক্তিগত তথ্য</h3>
+                <div>
+                  <label className={labelClass}>নাম *</label>
+                  <input className={`${inputClass} ${errors.name ? "border-destructive ring-destructive/20" : "border-input"}`} placeholder="তোমার পুরো নাম" value={form.name} onChange={(e) => set("name", e.target.value)} />
+                  {errors.name && <p className={errorClass}>{errors.name}</p>}
+                </div>
+                <div>
+                  <label className={labelClass}>রোল নম্বর *</label>
+                  <input className={`${inputClass} ${errors.roll ? "border-destructive ring-destructive/20" : "border-input"}`} placeholder="যেমন: 1234" type="number" value={form.roll} onChange={(e) => set("roll", e.target.value)} />
+                  {errors.roll && <p className={errorClass}>{errors.roll}</p>}
+                </div>
+                <div>
+                  <label className={labelClass}>ফোন নম্বর *</label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <input className={`${inputClass} pl-10 ${errors.phone ? "border-destructive ring-destructive/20" : "border-input"}`} placeholder="01XXXXXXXXX" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+                  </div>
+                  {errors.phone && <p className={errorClass}>{errors.phone}</p>}
+                </div>
+                <div>
+                  <label className={labelClass}>ডিপার্টমেন্ট *</label>
+                  <select className={`${inputClass} ${errors.department ? "border-destructive ring-destructive/20" : "border-input"}`} value={form.department} onChange={(e) => set("department", e.target.value)}>
+                    <option value="">সিলেক্ট করো</option>
+                    {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                  {errors.department && <p className={errorClass}>{errors.department}</p>}
+                </div>
+                <div>
+                  <label className={labelClass}>হল *</label>
+                  <select className={`${inputClass} ${errors.hall ? "border-destructive ring-destructive/20" : "border-input"}`} value={form.hall} onChange={(e) => set("hall", e.target.value)}>
+                    <option value="">সিলেক্ট করো</option>
+                    {HALLS.map((h) => <option key={h} value={h}>{h}</option>)}
+                  </select>
+                  {errors.hall && <p className={errorClass}>{errors.hall}</p>}
+                </div>
+                <div>
+                  <label className={labelClass}>টি-শার্ট সাইজ *</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {TSHIRT_SIZES.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => set("tshirtSize", s)}
+                        className={`px-5 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
+                          form.tshirtSize === s
+                            ? "bg-primary text-primary-foreground border-primary scale-105"
+                            : "border-input bg-card hover:bg-muted active:scale-95"
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                  {errors.tshirtSize && <p className={errorClass}>{errors.tshirtSize}</p>}
+                </div>
+              </motion.div>
+            )}
+
+            {step === 2 && (
+              <motion.div
+                key="step2"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="rounded-2xl bg-surface p-5 space-y-4"
+              >
+                <h3 className="font-display font-semibold text-sm text-muted-foreground uppercase tracking-wider">ছবি আপলোড</h3>
+                <p className="text-xs text-muted-foreground">মেমোরি গ্যালারিতে তোমার ছবি দেখা যাবে (ঐচ্ছিক)</p>
+                <label className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-input p-8 cursor-pointer hover:border-primary/40 transition-colors active:bg-muted/50">
+                  {photoPreview ? (
+                    <motion.img
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      src={photoPreview}
+                      alt="Preview"
+                      className="h-40 w-40 rounded-xl object-cover shadow-card"
+                    />
+                  ) : (
+                    <>
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                        <Upload className="h-7 w-7 text-primary" />
+                      </div>
+                      <span className="text-sm text-muted-foreground font-medium">ছবি সিলেক্ট করো</span>
+                      <span className="text-xs text-muted-foreground">Max 5MB · JPG, PNG</span>
+                    </>
+                  )}
+                  <input type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
+                </label>
+                {photoPreview && (
                   <button
-                    key={s}
                     type="button"
-                    onClick={() => set("tshirtSize", s)}
-                    className={`px-5 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
-                      form.tshirtSize === s
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "border-input bg-card hover:bg-muted"
-                    }`}
+                    onClick={() => { setPhoto(null); setPhotoPreview(null); }}
+                    className="text-xs text-destructive font-semibold hover:underline"
                   >
-                    {s}
+                    ছবি মুছে ফেলো
                   </button>
-                ))}
-              </div>
-            </div>
-          </div>
+                )}
+              </motion.div>
+            )}
 
-          {/* Photo Upload */}
-          <div className="rounded-2xl bg-surface p-5 space-y-4">
-            <h3 className="font-display font-semibold text-sm text-muted-foreground uppercase tracking-wider">ছবি আপলোড</h3>
-            <label className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-input p-6 cursor-pointer hover:border-primary/40 transition-colors">
-              {photoPreview ? (
-                <img src={photoPreview} alt="Preview" className="h-32 w-32 rounded-xl object-cover" />
-              ) : (
-                <>
-                  <Upload className="h-8 w-8 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">ছবি সিলেক্ট করো (Max 5MB)</span>
-                </>
-              )}
-              <input type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
-            </label>
-          </div>
-
-          {/* Payment */}
-          <div className="rounded-2xl bg-surface p-5 space-y-4">
-            <h3 className="font-display font-semibold text-sm text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-              <CreditCard className="h-4 w-4" /> পেমেন্ট তথ্য
-            </h3>
-            <div className="flex gap-2">
-              {(["bkash", "nagad"] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => set("paymentMethod", m)}
-                  className={`flex-1 py-3 rounded-xl border text-sm font-bold transition-all ${
-                    form.paymentMethod === m
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-input bg-card hover:bg-muted"
-                  }`}
+            {step === 3 && (
+              <motion.div
+                key="step3"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="rounded-2xl bg-surface p-5 space-y-4"
+              >
+                <h3 className="font-display font-semibold text-sm text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" /> পেমেন্ট তথ্য
+                </h3>
+                <div className="flex gap-2">
+                  {(["bkash", "nagad"] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => set("paymentMethod", m)}
+                      className={`flex-1 py-3 rounded-xl border text-sm font-bold transition-all ${
+                        form.paymentMethod === m
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-input bg-card hover:bg-muted active:scale-95"
+                      }`}
+                    >
+                      {m === "bkash" ? "বিকাশ" : "নগদ"}
+                    </button>
+                  ))}
+                </div>
+                <motion.div
+                  layout
+                  className="rounded-xl bg-card p-4 border border-border text-center"
                 >
-                  {m === "bkash" ? "বিকাশ" : "নগদ"}
-                </button>
-              ))}
-            </div>
-            <div className="rounded-xl bg-card p-4 border border-border text-center">
-              <p className="text-xs text-muted-foreground mb-1">টাকা পাঠাও এই নম্বরে</p>
-              <p className="font-display font-bold text-lg text-primary">
-                {PAYMENT_NUMBERS[form.paymentMethod]}
-              </p>
-            </div>
-            <div>
-              <label className={labelClass}>ট্রানজেকশন আইডি (TxID) *</label>
-              <input className={inputClass} placeholder="যেমন: 9A3F2K1L0P" required value={form.txId} onChange={(e) => set("txId", e.target.value)} />
-            </div>
-            <div>
-              <label className={labelClass}>যে নম্বর থেকে পাঠিয়েছো *</label>
-              <input className={inputClass} placeholder="01XXXXXXXXX" required value={form.senderNumber} onChange={(e) => set("senderNumber", e.target.value)} />
-            </div>
-          </div>
+                  <p className="text-xs text-muted-foreground mb-1">টাকা পাঠাও এই নম্বরে</p>
+                  <p className="font-display font-bold text-lg text-primary">
+                    {PAYMENT_NUMBERS[form.paymentMethod]}
+                  </p>
+                </motion.div>
+                <div>
+                  <label className={labelClass}>ট্রানজেকশন আইডি (TxID) *</label>
+                  <input className={`${inputClass} ${errors.txId ? "border-destructive ring-destructive/20" : "border-input"}`} placeholder="যেমন: 9A3F2K1L0P" value={form.txId} onChange={(e) => set("txId", e.target.value)} />
+                  {errors.txId && <p className={errorClass}>{errors.txId}</p>}
+                </div>
+                <div>
+                  <label className={labelClass}>যে নম্বর থেকে পাঠিয়েছো *</label>
+                  <input className={`${inputClass} ${errors.senderNumber ? "border-destructive ring-destructive/20" : "border-input"}`} placeholder="01XXXXXXXXX" value={form.senderNumber} onChange={(e) => set("senderNumber", e.target.value)} />
+                  {errors.senderNumber && <p className={errorClass}>{errors.senderNumber}</p>}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          <button
-            type="submit"
-            className="w-full py-4 rounded-xl bg-accent text-accent-foreground font-display font-bold text-base transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
-          >
-            সাবমিট করো 🚀
-          </button>
+          {/* Navigation */}
+          <div className="flex gap-3 mt-5">
+            {step > 1 && (
+              <button
+                type="button"
+                onClick={prevStep}
+                className="flex items-center gap-1.5 px-5 py-3 rounded-xl border border-input bg-card font-display font-semibold text-sm hover:bg-muted transition-colors active:scale-[0.98]"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                পিছনে
+              </button>
+            )}
+            {step < 3 ? (
+              <button
+                type="button"
+                onClick={nextStep}
+                className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl bg-primary text-primary-foreground font-display font-bold text-sm transition-all hover:scale-[1.02] active:scale-[0.98] shadow-md"
+              >
+                পরবর্তী
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                className="flex-1 py-3.5 rounded-xl bg-accent text-accent-foreground font-display font-bold text-base transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+              >
+                সাবমিট করো 🚀
+              </button>
+            )}
+          </div>
         </form>
       </motion.div>
     </div>

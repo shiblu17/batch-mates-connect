@@ -75,4 +75,7 @@
   .shadow-card-hover {
     box-shadow: 0 8px 32px -4px hsl(var(--foreground) / 0.12);
   }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
 }
