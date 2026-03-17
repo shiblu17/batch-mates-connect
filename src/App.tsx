@@ -9,6 +9,11 @@ import Register from "./pages/Register";
 import Leaderboard from "./pages/Leaderboard";
 import Status from "./pages/Status";
 import Gallery from "./pages/Gallery";
+import AdminLayout from "./pages/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminPayments from "./pages/admin/AdminPayments";
+import AdminExport from "./pages/admin/AdminExport";
+import AdminScanner from "./pages/admin/AdminScanner";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -19,13 +24,62 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Navbar />
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/status" element={<Status />} />
-          <Route path="/gallery" element={<Gallery />} />
+          {/* Public routes with Navbar */}
+          <Route
+            path="/"
+            element={
+              <>
+                <Navbar />
+                <Index />
+              </>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <>
+                <Navbar />
+                <Register />
+              </>
+            }
+          />
+          <Route
+            path="/leaderboard"
+            element={
+              <>
+                <Navbar />
+                <Leaderboard />
+              </>
+            }
+          />
+          <Route
+            path="/status"
+            element={
+              <>
+                <Navbar />
+                <Status />
+              </>
+            }
+          />
+          <Route
+            path="/gallery"
+            element={
+              <>
+                <Navbar />
+                <Gallery />
+              </>
+            }
+          />
+
+          {/* Admin routes with sidebar */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="payments" element={<AdminPayments />} />
+            <Route path="export" element={<AdminExport />} />
+            <Route path="scanner" element={<AdminScanner />} />
+          </Route>
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
