@@ -1,114 +1,245 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, CalendarDays, MapPin, Users } from "lucide-react";
+import { ArrowRight, CalendarDays, MapPin, Users, Sparkles, Clock, Share2 } from "lucide-react";
 import LeaderboardCard from "@/components/LeaderboardCard";
 import { MOCK_DEPT_LEADERBOARD, MOCK_HALL_LEADERBOARD } from "@/lib/constants";
 
+const EVENT_DATE = new Date("2025-06-15T10:00:00+06:00");
+
+function useCountdown(target: Date) {
+  const calc = () => {
+    const diff = Math.max(0, target.getTime() - Date.now());
+    return {
+      days: Math.floor(diff / 86400000),
+      hours: Math.floor((diff % 86400000) / 3600000),
+      minutes: Math.floor((diff % 3600000) / 60000),
+      seconds: Math.floor((diff % 60000) / 1000),
+    };
+  };
+  const [time, setTime] = useState(calc);
+  useEffect(() => {
+    const id = setInterval(() => setTime(calc), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return time;
+}
+
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.1 } },
+};
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
+
 export default function HomePage() {
+  const countdown = useCountdown(EVENT_DATE);
+
   return (
     <div className="pb-20 md:pb-0">
       {/* Hero */}
       <section className="relative overflow-hidden bg-primary">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0" style={{
-            backgroundImage: "radial-gradient(circle at 20% 50%, hsl(37 90% 43% / 0.3) 0%, transparent 50%), radial-gradient(circle at 80% 20%, hsl(160 84% 30% / 0.2) 0%, transparent 50%)"
-          }} />
-        </div>
-        <div className="container relative py-16 md:py-24 text-center">
+        {/* Decorative pattern */}
+        <div className="absolute inset-0 opacity-[0.07]" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }} />
+        <div className="absolute inset-0" style={{
+          backgroundImage: "radial-gradient(circle at 20% 80%, hsl(37 90% 43% / 0.15) 0%, transparent 50%), radial-gradient(circle at 85% 20%, hsl(160 84% 30% / 0.12) 0%, transparent 50%)"
+        }} />
+
+        <div className="container relative py-14 md:py-24 text-center">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            variants={stagger}
+            initial="hidden"
+            animate="show"
+            className="space-y-4"
           >
-            <p className="font-body text-sm font-medium tracking-widest uppercase text-primary-foreground/70 mb-3">
-              জাহাঙ্গীরনগর বিশ্ববিদ্যালয়
-            </p>
-            <h1 className="font-display text-5xl md:text-7xl font-extrabold text-primary-foreground leading-tight">
-              JU-52
-            </h1>
-            <p className="font-display text-xl md:text-2xl font-bold text-accent mt-2">
+            <motion.p variants={fadeUp} className="font-body text-xs sm:text-sm font-medium tracking-[0.2em] uppercase text-primary-foreground/60">
+              জাহাঙ্গীরনগর বিশ্ববিদ্যালয় · ৪৮তম ব্যাচ
+            </motion.p>
+            <motion.h1 variants={fadeUp} className="font-display text-6xl sm:text-7xl md:text-8xl font-extrabold text-primary-foreground leading-none">
+              JU<span className="text-accent">-</span>52
+            </motion.h1>
+            <motion.p variants={fadeUp} className="font-display text-lg sm:text-xl md:text-2xl font-bold text-accent">
               ব্যাচ ডে ২০২৫
-            </p>
-            <p className="mt-4 text-primary-foreground/80 max-w-md mx-auto text-sm md:text-base">
-              ৪৮তম ব্যাচের সবচেয়ে বড় পুনর্মিলনী। রেজিস্ট্রেশন করো, স্মৃতি শেয়ার করো, একসাথে উদযাপন করো।
-            </p>
-            <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+            </motion.p>
+            <motion.p variants={fadeUp} className="text-primary-foreground/70 max-w-md mx-auto text-sm md:text-base leading-relaxed">
+              সবচেয়ে বড় পুনর্মিলনী। রেজিস্ট্রেশন করো, স্মৃতি শেয়ার করো, একসাথে উদযাপন করো।
+            </motion.p>
+
+            {/* Countdown */}
+            <motion.div variants={fadeUp} className="flex justify-center gap-3 sm:gap-4 pt-2">
+              {([
+                { val: countdown.days, label: "দিন" },
+                { val: countdown.hours, label: "ঘণ্টা" },
+                { val: countdown.minutes, label: "মিনিট" },
+                { val: countdown.seconds, label: "সেকেন্ড" },
+              ]).map((t) => (
+                <div key={t.label} className="flex flex-col items-center">
+                  <span className="font-display text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary-foreground tabular-nums w-12 sm:w-14 text-center">
+                    {String(t.val).padStart(2, "0")}
+                  </span>
+                  <span className="text-[10px] sm:text-xs text-primary-foreground/50 uppercase tracking-wider mt-1">{t.label}</span>
+                </div>
+              ))}
+            </motion.div>
+
+            {/* CTA */}
+            <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
               <Link
                 to="/register"
-                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-accent text-accent-foreground font-display font-bold text-base transition-transform hover:scale-105 shadow-lg"
+                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-accent text-accent-foreground font-display font-bold text-base transition-all hover:scale-105 hover:shadow-lg active:scale-[0.98] shadow-md"
               >
                 Register Now
                 <ArrowRight className="h-5 w-5" />
               </Link>
               <Link
                 to="/status"
-                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl border-2 border-primary-foreground/30 text-primary-foreground font-display font-semibold text-base hover:bg-primary-foreground/10 transition-colors"
+                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl border-2 border-primary-foreground/20 text-primary-foreground font-display font-semibold text-base hover:bg-primary-foreground/10 active:scale-[0.98] transition-all"
               >
                 Check Status
               </Link>
-            </div>
+            </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* Event Info */}
-      <section className="bg-surface py-12">
+      {/* Event Info Cards */}
+      <section className="bg-surface py-10 md:py-14">
         <div className="container">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-50px" }}
+            className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4"
+          >
             {[
-              { icon: CalendarDays, label: "তারিখ", value: "শীঘ্রই জানানো হবে" },
-              { icon: MapPin, label: "স্থান", value: "জাহাঙ্গীরনগর ক্যাম্পাস" },
-              { icon: Users, label: "রেজিস্টার্ড", value: "৮৫০+" },
-            ].map((item, i) => (
+              { icon: CalendarDays, label: "তারিখ", value: "১৫ জুন, ২০২৫", sub: "সকাল ১০:০০ টা" },
+              { icon: MapPin, label: "স্থান", value: "জাহাঙ্গীরনগর ক্যাম্পাস", sub: "সেন্ট্রাল ফিল্ড" },
+              { icon: Users, label: "রেজিস্টার্ড", value: "৮৫০+", sub: "শিক্ষার্থী" },
+            ].map((item) => (
               <motion.div
                 key={item.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="flex items-center gap-4 rounded-xl bg-card p-5 shadow-card"
+                variants={fadeUp}
+                className="flex items-center gap-4 rounded-2xl bg-card p-4 md:p-5 shadow-card hover:shadow-card-hover transition-shadow"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <item.icon className="h-6 w-6" />
+                <div className="flex h-11 w-11 md:h-12 md:w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <item.icon className="h-5 w-5 md:h-6 md:w-6" />
                 </div>
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">{item.label}</p>
-                  <p className="font-display font-bold text-base">{item.value}</p>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{item.label}</p>
+                  <p className="font-display font-bold text-sm md:text-base truncate">{item.value}</p>
+                  <p className="text-[11px] text-muted-foreground">{item.sub}</p>
                 </div>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Highlights */}
+      <section className="py-10 md:py-14">
+        <div className="container">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-8"
+          >
+            <h2 className="font-display text-2xl md:text-3xl font-bold">
+              <Sparkles className="inline h-6 w-6 text-accent mr-2 -mt-1" />
+              কেন যোগ দেবে?
+            </h2>
+          </motion.div>
+
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-50px" }}
+            className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4"
+          >
+            {[
+              { emoji: "🎶", title: "লাইভ কনসার্ট", desc: "মিউজিক ও পারফরম্যান্স" },
+              { emoji: "🍽️", title: "ফুড ফেস্ট", desc: "ক্যাম্পাসের বিখ্যাত খাবার" },
+              { emoji: "📸", title: "ফটো জোন", desc: "স্মৃতি ধরে রাখো" },
+              { emoji: "🏆", title: "প্রতিযোগিতা", desc: "হল vs হল চ্যালেঞ্জ" },
+            ].map((item) => (
+              <motion.div
+                key={item.title}
+                variants={fadeUp}
+                whileHover={{ y: -4 }}
+                className="rounded-2xl bg-card p-4 md:p-5 shadow-card text-center hover:shadow-card-hover transition-shadow"
+              >
+                <span className="text-3xl md:text-4xl block mb-2">{item.emoji}</span>
+                <p className="font-display font-bold text-sm md:text-base">{item.title}</p>
+                <p className="text-[11px] md:text-xs text-muted-foreground mt-1">{item.desc}</p>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
       </section>
 
       {/* Leaderboard Preview */}
-      <section className="py-12">
+      <section className="py-10 md:py-14 bg-surface">
         <div className="container">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-display text-2xl font-bold">🏆 লিডারবোর্ড</h2>
-            <Link to="/leaderboard" className="text-sm font-medium text-primary hover:underline">
-              সব দেখুন →
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="flex items-center justify-between mb-6"
+          >
+            <h2 className="font-display text-xl md:text-2xl font-bold">🏆 লিডারবোর্ড</h2>
+            <Link to="/leaderboard" className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
+              সব দেখুন <ArrowRight className="h-3.5 w-3.5" />
             </Link>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+            {[
+              { label: "ডিপার্টমেন্ট", data: MOCK_DEPT_LEADERBOARD },
+              { label: "হল", data: MOCK_HALL_LEADERBOARD },
+            ].map((section) => (
+              <motion.div
+                key={section.label}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+              >
+                <h3 className="font-display font-semibold text-xs text-muted-foreground mb-3 uppercase tracking-widest">{section.label}</h3>
+                <div className="space-y-2.5">
+                  {section.data.slice(0, 3).map((d, i) => (
+                    <LeaderboardCard key={d.name} rank={i + 1} {...d} />
+                  ))}
+                </div>
+              </motion.div>
+            ))}
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
-            <div>
-              <h3 className="font-display font-semibold text-sm text-muted-foreground mb-3 uppercase tracking-wider">ডিপার্টমেন্ট</h3>
-              <div className="space-y-3">
-                {MOCK_DEPT_LEADERBOARD.slice(0, 3).map((d, i) => (
-                  <LeaderboardCard key={d.name} rank={i + 1} {...d} />
-                ))}
-              </div>
-            </div>
-            <div>
-              <h3 className="font-display font-semibold text-sm text-muted-foreground mb-3 uppercase tracking-wider">হল</h3>
-              <div className="space-y-3">
-                {MOCK_HALL_LEADERBOARD.slice(0, 3).map((h, i) => (
-                  <LeaderboardCard key={h.name} rank={i + 1} {...h} />
-                ))}
-              </div>
-            </div>
-          </div>
+          {/* Share CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mt-8 rounded-2xl bg-card p-5 md:p-6 shadow-card text-center"
+          >
+            <p className="font-display font-bold text-sm md:text-base mb-1">তোমার হল কি এগিয়ে আছে? 🤔</p>
+            <p className="text-xs text-muted-foreground mb-4">শেয়ার করো, বন্ধুদের রেজিস্ট্রেশন করতে বলো!</p>
+            <button
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({ title: "JU-52 ব্যাচ ডে", text: "আমাদের ব্যাচ ডে-তে যোগ দাও! রেজিস্ট্রেশন চলছে।", url: window.location.origin });
+                }
+              }}
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-display font-bold text-sm transition-all hover:scale-105 active:scale-[0.98]"
+            >
+              <Share2 className="h-4 w-4" />
+              শেয়ার করো
+            </button>
+          </motion.div>
         </div>
       </section>
     </div>
