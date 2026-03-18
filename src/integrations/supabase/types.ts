@@ -14,7 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      registrations: {
+        Row: {
+          attended: boolean
+          created_at: string
+          department: string
+          hall: string
+          id: string
+          name: string
+          payment_method: string
+          phone: string
+          photo_url: string | null
+          roll: string
+          sender_number: string
+          status: string
+          tshirt_size: string
+          tx_id: string
+          updated_at: string
+        }
+        Insert: {
+          attended?: boolean
+          created_at?: string
+          department: string
+          hall: string
+          id?: string
+          name: string
+          payment_method: string
+          phone: string
+          photo_url?: string | null
+          roll: string
+          sender_number: string
+          status?: string
+          tshirt_size: string
+          tx_id: string
+          updated_at?: string
+        }
+        Update: {
+          attended?: boolean
+          created_at?: string
+          department?: string
+          hall?: string
+          id?: string
+          name?: string
+          payment_method?: string
+          phone?: string
+          photo_url?: string | null
+          roll?: string
+          sender_number?: string
+          status?: string
+          tshirt_size?: string
+          tx_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
