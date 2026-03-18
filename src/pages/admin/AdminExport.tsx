@@ -1,20 +1,21 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Download, FileSpreadsheet, FileText } from "lucide-react";
-import { MOCK_REGISTRATIONS } from "@/lib/mock-admin-data";
+import { Download, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
+import { useRegistrations } from "@/hooks/useRegistrations";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AdminExport() {
   const { toast } = useToast();
+  const { data: registrations = [], isLoading } = useRegistrations();
   const [filter, setFilter] = useState<"all" | "verified" | "pending">("all");
 
-  const filtered = filter === "all" ? MOCK_REGISTRATIONS : MOCK_REGISTRATIONS.filter((r) => r.status === filter);
+  const filtered = filter === "all" ? registrations : registrations.filter((r) => r.status === filter);
 
   const exportCSV = () => {
     const headers = ["নাম", "রোল", "ফোন", "ডিপার্টমেন্ট", "হল", "টি-শার্ট", "পেমেন্ট মেথড", "TxID", "সেন্ডার নম্বর", "স্ট্যাটাস", "তারিখ"];
     const rows = filtered.map((r) => [
-      r.name, r.roll, r.phone, r.department, r.hall, r.tshirtSize,
-      r.paymentMethod, r.txId, r.senderNumber, r.status, r.createdAt,
+      r.name, r.roll, r.phone, r.department, r.hall, r.tshirt_size,
+      r.payment_method, r.tx_id, r.sender_number, r.status, r.created_at,
     ]);
     const csv = [headers.join(","), ...rows.map((r) => r.map((c) => `"${c}"`).join(","))].join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
@@ -38,12 +39,19 @@ export default function AdminExport() {
     toast({ title: "JSON ডাউনলোড হচ্ছে 📥" });
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div>
       <h1 className="font-display text-2xl font-bold mb-1">ডেটা এক্সপোর্ট</h1>
       <p className="text-sm text-muted-foreground mb-6">রেজিস্ট্রেশন ডেটা ডাউনলোড করো</p>
 
-      {/* Filter */}
       <div className="flex gap-2 mb-6">
         {(["all", "verified", "pending"] as const).map((f) => {
           const labels: Record<string, string> = { all: "সব", verified: "ভেরিফাইড", pending: "পেন্ডিং" };
@@ -63,7 +71,6 @@ export default function AdminExport() {
 
       <p className="text-sm text-muted-foreground mb-4">{filtered.length}টি রেকর্ড সিলেক্টেড</p>
 
-      {/* Export options */}
       <div className="grid sm:grid-cols-2 gap-4">
         <motion.button
           whileHover={{ scale: 1.02 }}
@@ -98,7 +105,6 @@ export default function AdminExport() {
         </motion.button>
       </div>
 
-      {/* Preview table */}
       <div className="mt-6 rounded-xl bg-card shadow-card overflow-hidden">
         <div className="p-4 border-b border-border">
           <h2 className="font-display font-semibold text-sm">প্রিভিউ</h2>
@@ -126,6 +132,9 @@ export default function AdminExport() {
                   </td>
                 </tr>
               ))}
+              {filtered.length === 0 && (
+                <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">কোনো রেকর্ড নেই</td></tr>
+              )}
             </tbody>
           </table>
         </div>

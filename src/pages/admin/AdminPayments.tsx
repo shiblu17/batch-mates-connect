@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle, XCircle, Search, Eye } from "lucide-react";
-import { MOCK_REGISTRATIONS, Registration } from "@/lib/mock-admin-data";
+import { CheckCircle, XCircle, Search, Eye, Loader2 } from "lucide-react";
+import { useRegistrations, type Registration } from "@/hooks/useRegistrations";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -12,26 +14,45 @@ import {
 
 export default function AdminPayments() {
   const { toast } = useToast();
-  const [data, setData] = useState<Registration[]>(MOCK_REGISTRATIONS);
+  const queryClient = useQueryClient();
+  const { data: registrations = [], isLoading } = useRegistrations();
   const [filter, setFilter] = useState<"all" | "pending" | "verified" | "rejected">("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Registration | null>(null);
 
-  const filtered = data.filter((r) => {
+  const filtered = registrations.filter((r) => {
     if (filter !== "all" && r.status !== filter) return false;
-    if (search && !r.name.includes(search) && !r.roll.includes(search) && !r.txId.toLowerCase().includes(search.toLowerCase())) return false;
+    if (search && !r.name.includes(search) && !r.roll.includes(search) && !r.tx_id.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 
-  const updateStatus = (id: string, status: "verified" | "rejected") => {
-    setData((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+  const updateStatus = async (id: string, status: "verified" | "rejected") => {
+    const { error } = await supabase
+      .from("registrations")
+      .update({ status })
+      .eq("id", id);
+
+    if (error) {
+      toast({ title: "আপডেট ব্যর্থ হয়েছে", variant: "destructive" });
+      return;
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["registrations"] });
     setSelected(null);
     toast({
       title: status === "verified" ? "পেমেন্ট অ্যাপ্রুভ হয়েছে ✅" : "পেমেন্ট রিজেক্ট হয়েছে ❌",
     });
   };
 
-  const pendingCount = data.filter((r) => r.status === "pending").length;
+  const pendingCount = registrations.filter((r) => r.status === "pending").length;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -42,7 +63,6 @@ export default function AdminPayments() {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -71,7 +91,6 @@ export default function AdminPayments() {
         </div>
       </div>
 
-      {/* Table */}
       <div className="rounded-xl bg-card shadow-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -90,8 +109,8 @@ export default function AdminPayments() {
                 <tr key={r.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                   <td className="p-3 font-medium">{r.name}</td>
                   <td className="p-3">{r.roll}</td>
-                  <td className="p-3 hidden md:table-cell font-mono text-xs">{r.txId}</td>
-                  <td className="p-3 hidden lg:table-cell">{r.paymentMethod === "bkash" ? "বিকাশ" : "নগদ"}</td>
+                  <td className="p-3 hidden md:table-cell font-mono text-xs">{r.tx_id}</td>
+                  <td className="p-3 hidden lg:table-cell">{r.payment_method === "bkash" ? "বিকাশ" : "নগদ"}</td>
                   <td className="p-3"><StatusBadge status={r.status} /></td>
                   <td className="p-3 text-right">
                     <div className="flex items-center justify-end gap-1">
@@ -120,7 +139,6 @@ export default function AdminPayments() {
         )}
       </div>
 
-      {/* Detail Dialog */}
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -134,11 +152,11 @@ export default function AdminPayments() {
                 ["ফোন", selected.phone],
                 ["ডিপার্টমেন্ট", selected.department],
                 ["হল", selected.hall],
-                ["টি-শার্ট", selected.tshirtSize],
-                ["পেমেন্ট মেথড", selected.paymentMethod === "bkash" ? "বিকাশ" : "নগদ"],
-                ["TxID", selected.txId],
-                ["সেন্ডার নম্বর", selected.senderNumber],
-                ["তারিখ", selected.createdAt],
+                ["টি-শার্ট", selected.tshirt_size],
+                ["পেমেন্ট মেথড", selected.payment_method === "bkash" ? "বিকাশ" : "নগদ"],
+                ["TxID", selected.tx_id],
+                ["সেন্ডার নম্বর", selected.sender_number],
+                ["তারিখ", new Date(selected.created_at).toLocaleDateString("bn-BD")],
               ].map(([label, value]) => (
                 <div key={label} className="flex justify-between py-1.5 border-b border-border last:border-0">
                   <span className="text-muted-foreground">{label}</span>

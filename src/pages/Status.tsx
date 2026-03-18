@@ -1,36 +1,46 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Clock, CheckCircle, XCircle, Download } from "lucide-react";
+import { Search, Clock, CheckCircle, XCircle, Download, Loader2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { supabase } from "@/integrations/supabase/client";
 
-type Status = "idle" | "pending" | "verified" | "rejected" | "not_found";
+type Status = "idle" | "pending" | "verified" | "rejected" | "not_found" | "loading";
 
-const statusConfig: Record<Exclude<Status, "idle">, { icon: React.ElementType; label: string; color: string; bg: string }> = {
+const statusConfig: Record<string, { icon: React.ElementType; label: string; color: string; bg: string }> = {
   pending: { icon: Clock, label: "পেমেন্ট পেন্ডিং", color: "text-accent", bg: "bg-accent/10" },
   verified: { icon: CheckCircle, label: "পেমেন্ট ভেরিফাইড ✅", color: "text-secondary", bg: "bg-secondary/10" },
   rejected: { icon: XCircle, label: "পেমেন্ট রিজেক্টেড", color: "text-destructive", bg: "bg-destructive/10" },
   not_found: { icon: Search, label: "এই রোলে কোনো রেজিস্ট্রেশন পাওয়া যায়নি", color: "text-muted-foreground", bg: "bg-muted" },
 };
 
-const MOCK_DATA: Record<string, { name: string; dept: string; hall: string; status: "pending" | "verified" | "rejected" }> = {
-  "1234": { name: "রাকিব হাসান", dept: "কম্পিউটার সায়েন্স ও ইঞ্জিনিয়ারিং", hall: "আল-বেরুনী হল", status: "verified" },
-  "5678": { name: "নুসরাত জাহান", dept: "ফার্মেসি", hall: "প্রীতিলতা হল", status: "pending" },
-};
+interface UserData {
+  name: string;
+  department: string;
+  hall: string;
+  status: string;
+}
 
 export default function StatusPage() {
   const [roll, setRoll] = useState("");
   const [status, setStatus] = useState<Status>("idle");
-  const [userData, setUserData] = useState<typeof MOCK_DATA["1234"] | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    const data = MOCK_DATA[roll];
-    if (data) {
-      setUserData(data);
-      setStatus(data.status);
-    } else {
+    setStatus("loading");
+
+    const { data, error } = await supabase
+      .from("registrations")
+      .select("name, department, hall, status")
+      .eq("roll", roll.trim())
+      .maybeSingle();
+
+    if (error || !data) {
       setUserData(null);
       setStatus("not_found");
+    } else {
+      setUserData(data);
+      setStatus(data.status as Status);
     }
   };
 
@@ -53,14 +63,15 @@ export default function StatusPage() {
           </div>
           <button
             type="submit"
-            className="px-6 rounded-xl bg-primary text-primary-foreground font-display font-bold text-sm transition-all hover:scale-105 active:scale-95"
+            disabled={status === "loading"}
+            className="px-6 rounded-xl bg-primary text-primary-foreground font-display font-bold text-sm transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
           >
-            খোঁজো
+            {status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" /> : "খোঁজো"}
           </button>
         </form>
 
         <AnimatePresence mode="wait">
-          {status !== "idle" && (
+          {status !== "idle" && status !== "loading" && (
             <motion.div
               key={status + roll}
               initial={{ opacity: 0, y: 20 }}
@@ -69,13 +80,13 @@ export default function StatusPage() {
             >
               {status !== "not_found" && userData ? (
                 <div className="space-y-4">
-                  <div className={`flex items-center gap-3 p-4 rounded-xl ${statusConfig[status].bg}`}>
+                  <div className={`flex items-center gap-3 p-4 rounded-xl ${statusConfig[status]?.bg}`}>
                     {(() => {
-                      const Icon = statusConfig[status].icon;
-                      return <Icon className={`h-6 w-6 ${statusConfig[status].color}`} />;
+                      const Icon = statusConfig[status]?.icon;
+                      return Icon ? <Icon className={`h-6 w-6 ${statusConfig[status]?.color}`} /> : null;
                     })()}
-                    <span className={`font-display font-bold ${statusConfig[status].color}`}>
-                      {statusConfig[status].label}
+                    <span className={`font-display font-bold ${statusConfig[status]?.color}`}>
+                      {statusConfig[status]?.label}
                     </span>
                   </div>
 
@@ -83,7 +94,7 @@ export default function StatusPage() {
                     {[
                       { label: "নাম", value: userData.name },
                       { label: "রোল", value: roll },
-                      { label: "ডিপার্টমেন্ট", value: userData.dept },
+                      { label: "ডিপার্টমেন্ট", value: userData.department },
                       { label: "হল", value: userData.hall },
                     ].map((item) => (
                       <div key={item.label} className="flex justify-between text-sm gap-2">
@@ -107,7 +118,7 @@ export default function StatusPage() {
                       </div>
                       <div>
                         <p className="font-display font-bold text-lg">{userData.name}</p>
-                        <p className="text-sm opacity-80">{userData.dept}</p>
+                        <p className="text-sm opacity-80">{userData.department}</p>
                         <p className="text-xs opacity-60">Roll: {roll}</p>
                       </div>
                       <button className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-accent text-accent-foreground font-display font-bold text-sm transition-all hover:scale-105 active:scale-95">
@@ -128,10 +139,6 @@ export default function StatusPage() {
             </motion.div>
           )}
         </AnimatePresence>
-
-        <p className="mt-6 text-xs text-muted-foreground text-center">
-          💡 ডেমো: রোল <strong>1234</strong> (ভেরিফাইড) বা <strong>5678</strong> (পেন্ডিং) দিয়ে চেষ্টা করো
-        </p>
       </motion.div>
     </div>
   );

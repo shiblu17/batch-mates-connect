@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { DEPARTMENTS, HALLS, TSHIRT_SIZES, PAYMENT_NUMBERS } from "@/lib/constants";
-import { CheckCircle, Upload, Phone, CreditCard, ChevronLeft, ChevronRight, User, Camera } from "lucide-react";
+import { CheckCircle, Upload, Phone, CreditCard, ChevronLeft, ChevronRight, User, Camera, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const STEPS = [
   { id: 1, label: "ব্যক্তিগত", icon: User },
@@ -14,6 +15,7 @@ export default function RegisterPage() {
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -75,10 +77,61 @@ export default function RegisterPage() {
     if (step > 1) setStep(step - 1);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateStep3()) return;
-    setSubmitted(true);
+    setSubmitting(true);
+
+    try {
+      let photoUrl: string | null = null;
+
+      // Upload photo if provided
+      if (photo) {
+        const ext = photo.name.split(".").pop();
+        const filePath = `${form.roll}-${Date.now()}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from("photos")
+          .upload(filePath, photo);
+
+        if (uploadError) {
+          toast({ title: "ছবি আপলোড ব্যর্থ হয়েছে", description: uploadError.message, variant: "destructive" });
+          setSubmitting(false);
+          return;
+        }
+
+        const { data: urlData } = supabase.storage.from("photos").getPublicUrl(filePath);
+        photoUrl = urlData.publicUrl;
+      }
+
+      // Insert registration
+      const { error } = await supabase.from("registrations").insert({
+        name: form.name,
+        roll: form.roll,
+        phone: form.phone,
+        department: form.department,
+        hall: form.hall,
+        tshirt_size: form.tshirtSize,
+        payment_method: form.paymentMethod,
+        tx_id: form.txId,
+        sender_number: form.senderNumber,
+        photo_url: photoUrl,
+      });
+
+      if (error) {
+        if (error.code === "23505") {
+          toast({ title: "এই রোল নম্বর দিয়ে আগেই রেজিস্ট্রেশন করা হয়েছে", variant: "destructive" });
+        } else {
+          toast({ title: "রেজিস্ট্রেশন ব্যর্থ হয়েছে", description: error.message, variant: "destructive" });
+        }
+        setSubmitting(false);
+        return;
+      }
+
+      setSubmitted(true);
+    } catch (err) {
+      toast({ title: "কিছু একটা সমস্যা হয়েছে", variant: "destructive" });
+      setSubmitting(false);
+    }
   };
 
   if (submitted) {
@@ -313,7 +366,8 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={prevStep}
-                className="flex items-center gap-1.5 px-5 py-3 rounded-xl border border-input bg-card font-display font-semibold text-sm hover:bg-muted transition-colors active:scale-[0.98]"
+                disabled={submitting}
+                className="flex items-center gap-1.5 px-5 py-3 rounded-xl border border-input bg-card font-display font-semibold text-sm hover:bg-muted transition-colors active:scale-[0.98] disabled:opacity-50"
               >
                 <ChevronLeft className="h-4 w-4" />
                 পিছনে
@@ -331,9 +385,17 @@ export default function RegisterPage() {
             ) : (
               <button
                 type="submit"
-                className="flex-1 py-3.5 rounded-xl bg-accent text-accent-foreground font-display font-bold text-base transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+                disabled={submitting}
+                className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-accent text-accent-foreground font-display font-bold text-base transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg disabled:opacity-50 disabled:hover:scale-100"
               >
-                সাবমিট করো 🚀
+                {submitting ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    সাবমিট হচ্ছে...
+                  </>
+                ) : (
+                  "সাবমিট করো 🚀"
+                )}
               </button>
             )}
           </div>
