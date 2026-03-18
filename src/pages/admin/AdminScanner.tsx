@@ -1,13 +1,13 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Camera, CheckCircle, XCircle, ScanLine } from "lucide-react";
-import { MOCK_REGISTRATIONS } from "@/lib/mock-admin-data";
+import { Camera, CheckCircle, XCircle, ScanLine, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AdminScanner() {
   const { toast } = useToast();
-  const [scanning, setScanning] = useState(false);
   const [manualInput, setManualInput] = useState("");
+  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{
     found: boolean;
     name?: string;
@@ -16,22 +16,31 @@ export default function AdminScanner() {
     status?: string;
   } | null>(null);
 
-  const lookupQR = useCallback((code: string) => {
-    // QR format is "JU52-{roll}"
+  const lookupQR = useCallback(async (code: string) => {
     const roll = code.replace("JU52-", "").trim();
-    const reg = MOCK_REGISTRATIONS.find((r) => r.roll === roll && r.status === "verified");
-    if (reg) {
+    setLoading(true);
+
+    const { data: reg } = await supabase
+      .from("registrations")
+      .select("name, roll, department, status, attended")
+      .eq("roll", roll)
+      .maybeSingle();
+
+    setLoading(false);
+
+    if (reg && reg.status === "verified") {
       setResult({ found: true, name: reg.name, roll: reg.roll, dept: reg.department, status: reg.attended ? "already" : "success" });
-      toast({ title: `✅ ${reg.name} — এন্ট্রি কনফার্মড!` });
-    } else {
-      const pending = MOCK_REGISTRATIONS.find((r) => r.roll === roll);
-      if (pending) {
-        setResult({ found: true, name: pending.name, roll: pending.roll, dept: pending.department, status: "not_verified" });
-        toast({ title: "❌ পেমেন্ট ভেরিফাই হয়নি", variant: "destructive" });
-      } else {
-        setResult({ found: false });
-        toast({ title: "❌ রেজিস্ট্রেশন পাওয়া যায়নি", variant: "destructive" });
+      if (!reg.attended) {
+        // Mark as attended
+        await supabase.from("registrations").update({ attended: true }).eq("roll", roll);
       }
+      toast({ title: `✅ ${reg.name} — এন্ট্রি কনফার্মড!` });
+    } else if (reg) {
+      setResult({ found: true, name: reg.name, roll: reg.roll, dept: reg.department, status: "not_verified" });
+      toast({ title: "❌ পেমেন্ট ভেরিফাই হয়নি", variant: "destructive" });
+    } else {
+      setResult({ found: false });
+      toast({ title: "❌ রেজিস্ট্রেশন পাওয়া যায়নি", variant: "destructive" });
     }
   }, [toast]);
 
@@ -47,19 +56,16 @@ export default function AdminScanner() {
       <h1 className="font-display text-2xl font-bold mb-1">QR স্ক্যানার</h1>
       <p className="text-sm text-muted-foreground mb-6">ইভেন্টের দিন এন্ট্রি নিশ্চিত করো</p>
 
-      {/* Camera scanner placeholder */}
       <div className="rounded-2xl bg-foreground/5 border-2 border-dashed border-border p-8 text-center mb-6">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
           <Camera className="h-8 w-8 text-primary" />
         </div>
         <p className="font-display font-semibold mb-1">ক্যামেরা স্ক্যানার</p>
         <p className="text-xs text-muted-foreground mb-4">
-          ব্যাকএন্ড কানেক্ট হলে ক্যামেরা দিয়ে QR স্ক্যান করা যাবে।<br />
-          এখন ম্যানুয়ালি রোল নম্বর দিয়ে চেক করো।
+          ম্যানুয়ালি রোল নম্বর দিয়ে চেক করো।
         </p>
       </div>
 
-      {/* Manual input */}
       <form onSubmit={handleManual} className="flex gap-2 mb-6">
         <div className="relative flex-1">
           <ScanLine className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -72,13 +78,13 @@ export default function AdminScanner() {
         </div>
         <button
           type="submit"
-          className="px-6 rounded-xl bg-primary text-primary-foreground font-display font-bold text-sm transition-transform hover:scale-105"
+          disabled={loading}
+          className="px-6 rounded-xl bg-primary text-primary-foreground font-display font-bold text-sm transition-transform hover:scale-105 disabled:opacity-50"
         >
-          চেক
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "চেক"}
         </button>
       </form>
 
-      {/* Result */}
       {result && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -129,10 +135,6 @@ export default function AdminScanner() {
           )}
         </motion.div>
       )}
-
-      <p className="mt-6 text-xs text-muted-foreground text-center">
-        💡 ডেমো: রোল <strong>1234</strong> (ভেরিফাইড), <strong>5678</strong> (পেন্ডিং), <strong>3456</strong> (উপস্থিত) দিয়ে চেষ্টা করো
-      </p>
     </div>
   );
 }
