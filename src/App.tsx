@@ -4,11 +4,13 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Navbar from "@/components/Navbar";
+import ProtectedAdminRoute from "@/components/ProtectedAdminRoute";
 import Index from "./pages/Index";
 import Register from "./pages/Register";
 import Leaderboard from "./pages/Leaderboard";
 import Status from "./pages/Status";
 import Gallery from "./pages/Gallery";
+import AdminLogin from "./pages/admin/AdminLogin";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminPayments from "./pages/admin/AdminPayments";
@@ -72,8 +74,18 @@ const App = () => (
             }
           />
 
-          {/* Admin routes with sidebar */}
-          <Route path="/admin" element={<AdminLayout />}>
+          {/* Admin login (public) */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+
+          {/* Admin routes (protected) */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedAdminRoute>
+                <AdminLayout />
+              </ProtectedAdminRoute>
+            }
+          >
             <Route index element={<AdminDashboard />} />
             <Route path="payments" element={<AdminPayments />} />
             <Route path="export" element={<AdminExport />} />
