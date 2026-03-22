@@ -1,16 +1,21 @@
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2, ImageIcon } from "lucide-react";
 
-const MOCK_PHOTOS = [
-  { name: "রাকিব হাসান", dept: "CSE", color: "from-primary to-accent" },
-  { name: "নুসরাত জাহান", dept: "ফার্মেসি", color: "from-secondary to-primary" },
-  { name: "তানভীর আহমেদ", dept: "অর্থনীতি", color: "from-accent to-secondary" },
-  { name: "ফাতেমা আক্তার", dept: "ইংরেজি", color: "from-primary to-secondary" },
-  { name: "মোস্তাফিজ", dept: "গণিত", color: "from-secondary to-accent" },
-  { name: "সুমাইয়া রহমান", dept: "বাংলা", color: "from-accent to-primary" },
-  { name: "আরিফুল ইসলাম", dept: "পদার্থবিদ্যা", color: "from-primary to-accent" },
-  { name: "তাসনিম ফেরদৌস", dept: "রসায়ন", color: "from-secondary to-primary" },
-  { name: "রিফাত হাসান", dept: "IT", color: "from-accent to-secondary" },
-];
+function useGalleryPhotos() {
+  return useQuery({
+    queryKey: ["gallery-photos"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("gallery_photos")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
 
 const stagger = {
   hidden: {},
@@ -22,6 +27,8 @@ const fadeUp = {
 };
 
 export default function GalleryPage() {
+  const { data: photos = [], isLoading } = useGalleryPhotos();
+
   return (
     <div className="container py-6 md:py-8 pb-24 md:pb-8 px-4">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -29,39 +36,45 @@ export default function GalleryPage() {
         <p className="text-muted-foreground text-sm mb-6">৪৮তম ব্যাচের স্মৃতিগুলো</p>
       </motion.div>
 
-      <motion.div
-        variants={stagger}
-        initial="hidden"
-        animate="show"
-        className="columns-2 sm:columns-3 gap-3 space-y-3"
-      >
-        {MOCK_PHOTOS.map((photo, i) => {
-          const height = [180, 220, 260, 200, 240][i % 5];
-          return (
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : photos.length === 0 ? (
+        <div className="text-center py-20 text-muted-foreground">
+          <ImageIcon className="h-16 w-16 mx-auto mb-4 opacity-20" />
+          <p className="text-sm">এখনো কোনো ছবি আপলোড হয়নি</p>
+          <p className="text-xs mt-1">অ্যাডমিন গ্যালারিতে ছবি যোগ করলে এখানে দেখা যাবে</p>
+        </div>
+      ) : (
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          animate="show"
+          className="columns-2 sm:columns-3 gap-3 space-y-3"
+        >
+          {photos.map((photo) => (
             <motion.div
-              key={i}
+              key={photo.id}
               variants={fadeUp}
               whileHover={{ y: -4 }}
               className="break-inside-avoid rounded-xl overflow-hidden shadow-card group cursor-pointer"
             >
-              <div
-                className={`bg-gradient-to-br ${photo.color} flex items-center justify-center text-4xl transition-transform group-hover:scale-105`}
-                style={{ height }}
-              >
-                🎓
-              </div>
-              <div className="bg-card p-3">
-                <p className="font-display font-semibold text-sm">{photo.name}</p>
-                <p className="text-xs text-muted-foreground">{photo.dept}</p>
-              </div>
+              <img
+                src={photo.url}
+                alt={photo.caption || "Gallery photo"}
+                className="w-full object-cover transition-transform group-hover:scale-105"
+                loading="lazy"
+              />
+              {photo.caption && (
+                <div className="bg-card p-3">
+                  <p className="text-xs text-muted-foreground">{photo.caption}</p>
+                </div>
+              )}
             </motion.div>
-          );
-        })}
-      </motion.div>
-
-      <p className="mt-8 text-center text-sm text-muted-foreground">
-        রেজিস্ট্রেশনের সময় আপলোড করা ছবি এখানে দেখা যাবে
-      </p>
+          ))}
+        </motion.div>
+      )}
     </div>
   );
 }

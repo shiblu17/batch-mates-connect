@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, CalendarDays, MapPin, Users, Sparkles, Clock, Share2 } from "lucide-react";
+import { ArrowRight, CalendarDays, MapPin, Users, Sparkles, Clock, Share2, Loader2 } from "lucide-react";
 import LeaderboardCard from "@/components/LeaderboardCard";
 import { MOCK_DEPT_LEADERBOARD, MOCK_HALL_LEADERBOARD } from "@/lib/constants";
-
-const EVENT_DATE = new Date("2025-06-15T10:00:00+06:00");
+import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { useRegistrations } from "@/hooks/useRegistrations";
 
 function useCountdown(target: Date) {
   const calc = () => {
@@ -21,7 +21,7 @@ function useCountdown(target: Date) {
   useEffect(() => {
     const id = setInterval(() => setTime(calc), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [target]);
   return time;
 }
 
@@ -35,13 +35,33 @@ const fadeUp = {
 };
 
 export default function HomePage() {
-  const countdown = useCountdown(EVENT_DATE);
+  const { data: settings, isLoading: settingsLoading } = useSiteSettings();
+  const { data: registrations = [] } = useRegistrations();
+
+  const eventDate = new Date(settings?.event_date || "2025-06-15T10:00:00+06:00");
+  const countdown = useCountdown(eventDate);
+
+  const verifiedCount = registrations.filter((r) => r.status === "verified").length;
+
+  if (settingsLoading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const s = settings!;
+
+  // Format date for display
+  const dateObj = new Date(s.event_date);
+  const dateStr = dateObj.toLocaleDateString("bn-BD", { day: "numeric", month: "long", year: "numeric" });
+  const timeStr = dateObj.toLocaleTimeString("bn-BD", { hour: "numeric", minute: "2-digit" });
 
   return (
     <div className="pb-20 md:pb-0">
       {/* Hero */}
       <section className="relative overflow-hidden bg-primary">
-        {/* Decorative pattern */}
         <div className="absolute inset-0 opacity-[0.07]" style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }} />
@@ -50,23 +70,20 @@ export default function HomePage() {
         }} />
 
         <div className="container relative py-14 md:py-24 text-center">
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            animate="show"
-            className="space-y-4"
-          >
+          <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4">
             <motion.p variants={fadeUp} className="font-body text-xs sm:text-sm font-medium tracking-[0.2em] uppercase text-primary-foreground/60">
               জাহাঙ্গীরনগর বিশ্ববিদ্যালয় · ৪৮তম ব্যাচ
             </motion.p>
             <motion.h1 variants={fadeUp} className="font-display text-6xl sm:text-7xl md:text-8xl font-extrabold text-primary-foreground leading-none">
-              JU<span className="text-accent">-</span>52
+              {s.hero_title.includes("-") ? (
+                <>{s.hero_title.split("-")[0]}<span className="text-accent">-</span>{s.hero_title.split("-")[1]}</>
+              ) : s.hero_title}
             </motion.h1>
             <motion.p variants={fadeUp} className="font-display text-lg sm:text-xl md:text-2xl font-bold text-accent">
-              ব্যাচ ডে ২০২৫
+              {s.hero_subtitle}
             </motion.p>
             <motion.p variants={fadeUp} className="text-primary-foreground/70 max-w-md mx-auto text-sm md:text-base leading-relaxed">
-              সবচেয়ে বড় পুনর্মিলনী। রেজিস্ট্রেশন করো, স্মৃতি শেয়ার করো, একসাথে উদযাপন করো।
+              {s.hero_description}
             </motion.p>
 
             {/* Countdown */}
@@ -88,13 +105,19 @@ export default function HomePage() {
 
             {/* CTA */}
             <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-              <Link
-                to="/register"
-                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-accent text-accent-foreground font-display font-bold text-base transition-all hover:scale-105 hover:shadow-lg active:scale-[0.98] shadow-md"
-              >
-                Register Now
-                <ArrowRight className="h-5 w-5" />
-              </Link>
+              {s.registration_open ? (
+                <Link
+                  to="/register"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-accent text-accent-foreground font-display font-bold text-base transition-all hover:scale-105 hover:shadow-lg active:scale-[0.98] shadow-md"
+                >
+                  Register Now
+                  <ArrowRight className="h-5 w-5" />
+                </Link>
+              ) : (
+                <span className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-muted text-muted-foreground font-display font-bold text-base cursor-not-allowed">
+                  রেজিস্ট্রেশন বন্ধ
+                </span>
+              )}
               <Link
                 to="/status"
                 className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl border-2 border-primary-foreground/20 text-primary-foreground font-display font-semibold text-base hover:bg-primary-foreground/10 active:scale-[0.98] transition-all"
@@ -117,9 +140,9 @@ export default function HomePage() {
             className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4"
           >
             {[
-              { icon: CalendarDays, label: "তারিখ", value: "১৫ জুন, ২০২৫", sub: "সকাল ১০:০০ টা" },
-              { icon: MapPin, label: "স্থান", value: "জাহাঙ্গীরনগর ক্যাম্পাস", sub: "সেন্ট্রাল ফিল্ড" },
-              { icon: Users, label: "রেজিস্টার্ড", value: "৮৫০+", sub: "শিক্ষার্থী" },
+              { icon: CalendarDays, label: "তারিখ", value: dateStr, sub: timeStr },
+              { icon: MapPin, label: "স্থান", value: s.event_location.name, sub: s.event_location.detail },
+              { icon: Users, label: "রেজিস্টার্ড", value: `${verifiedCount}+`, sub: "শিক্ষার্থী" },
             ].map((item) => (
               <motion.div
                 key={item.label}
@@ -143,37 +166,20 @@ export default function HomePage() {
       {/* Highlights */}
       <section className="py-10 md:py-14">
         <div className="container">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-8"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-8">
             <h2 className="font-display text-2xl md:text-3xl font-bold">
               <Sparkles className="inline h-6 w-6 text-accent mr-2 -mt-1" />
               কেন যোগ দেবে?
             </h2>
           </motion.div>
-
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-50px" }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4"
-          >
+          <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }} className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {[
               { emoji: "🎶", title: "লাইভ কনসার্ট", desc: "মিউজিক ও পারফরম্যান্স" },
               { emoji: "🍽️", title: "ফুড ফেস্ট", desc: "ক্যাম্পাসের বিখ্যাত খাবার" },
               { emoji: "📸", title: "ফটো জোন", desc: "স্মৃতি ধরে রাখো" },
               { emoji: "🏆", title: "প্রতিযোগিতা", desc: "হল vs হল চ্যালেঞ্জ" },
             ].map((item) => (
-              <motion.div
-                key={item.title}
-                variants={fadeUp}
-                whileHover={{ y: -4 }}
-                className="rounded-2xl bg-card p-4 md:p-5 shadow-card text-center hover:shadow-card-hover transition-shadow"
-              >
+              <motion.div key={item.title} variants={fadeUp} whileHover={{ y: -4 }} className="rounded-2xl bg-card p-4 md:p-5 shadow-card text-center hover:shadow-card-hover transition-shadow">
                 <span className="text-3xl md:text-4xl block mb-2">{item.emoji}</span>
                 <p className="font-display font-bold text-sm md:text-base">{item.title}</p>
                 <p className="text-[11px] md:text-xs text-muted-foreground mt-1">{item.desc}</p>
@@ -186,29 +192,18 @@ export default function HomePage() {
       {/* Leaderboard Preview */}
       <section className="py-10 md:py-14 bg-surface">
         <div className="container">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="flex items-center justify-between mb-6"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="flex items-center justify-between mb-6">
             <h2 className="font-display text-xl md:text-2xl font-bold">🏆 লিডারবোর্ড</h2>
             <Link to="/leaderboard" className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
               সব দেখুন <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </motion.div>
-
           <div className="grid md:grid-cols-2 gap-6 md:gap-8">
             {[
               { label: "ডিপার্টমেন্ট", data: MOCK_DEPT_LEADERBOARD },
               { label: "হল", data: MOCK_HALL_LEADERBOARD },
             ].map((section) => (
-              <motion.div
-                key={section.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-              >
+              <motion.div key={section.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
                 <h3 className="font-display font-semibold text-xs text-muted-foreground mb-3 uppercase tracking-widest">{section.label}</h3>
                 <div className="space-y-2.5">
                   {section.data.slice(0, 3).map((d, i) => (
@@ -219,13 +214,7 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* Share CTA */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mt-8 rounded-2xl bg-card p-5 md:p-6 shadow-card text-center"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mt-8 rounded-2xl bg-card p-5 md:p-6 shadow-card text-center">
             <p className="font-display font-bold text-sm md:text-base mb-1">তোমার হল কি এগিয়ে আছে? 🤔</p>
             <p className="text-xs text-muted-foreground mb-4">শেয়ার করো, বন্ধুদের রেজিস্ট্রেশন করতে বলো!</p>
             <button
