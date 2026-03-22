@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { DEPARTMENTS, HALLS, TSHIRT_SIZES, PAYMENT_NUMBERS } from "@/lib/constants";
-import { CheckCircle, Upload, Phone, CreditCard, ChevronLeft, ChevronRight, User, Camera, Loader2 } from "lucide-react";
+import { DEPARTMENTS, HALLS, TSHIRT_SIZES } from "@/lib/constants";
+import { CheckCircle, Upload, Phone, CreditCard, ChevronLeft, ChevronRight, User, Camera, Loader2, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const STEPS = [
   { id: 1, label: "ব্যক্তিগত", icon: User },
@@ -13,6 +14,7 @@ const STEPS = [
 
 export default function RegisterPage() {
   const { toast } = useToast();
+  const { data: settings, isLoading: settingsLoading } = useSiteSettings();
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -133,6 +135,26 @@ export default function RegisterPage() {
       setSubmitting(false);
     }
   };
+
+  if (settingsLoading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (settings && !settings.registration_open) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center pb-20 md:pb-0 px-4">
+        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center p-8">
+          <XCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h2 className="font-display text-2xl font-bold mb-2">রেজিস্ট্রেশন বন্ধ আছে</h2>
+          <p className="text-muted-foreground text-sm">বর্তমানে রেজিস্ট্রেশন গ্রহণ করা হচ্ছে না। পরে আবার চেষ্টা করো।</p>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (submitted) {
     return (
@@ -343,7 +365,7 @@ export default function RegisterPage() {
                 >
                   <p className="text-xs text-muted-foreground mb-1">টাকা পাঠাও এই নম্বরে</p>
                   <p className="font-display font-bold text-lg text-primary">
-                    {PAYMENT_NUMBERS[form.paymentMethod]}
+                    {form.paymentMethod === "bkash" ? settings?.bkash_number : settings?.nagad_number}
                   </p>
                 </motion.div>
                 <div>
