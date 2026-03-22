@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { DEPARTMENTS, HALLS, TSHIRT_SIZES, PAYMENT_NUMBERS } from "@/lib/constants";
-import { CheckCircle, Upload, Phone, CreditCard, ChevronLeft, ChevronRight, User, Camera, Loader2 } from "lucide-react";
+import { DEPARTMENTS, HALLS, TSHIRT_SIZES } from "@/lib/constants";
+import { CheckCircle, Upload, Phone, CreditCard, ChevronLeft, ChevronRight, User, Camera, Loader2, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const STEPS = [
   { id: 1, label: "ব্যক্তিগত", icon: User },
