@@ -136,6 +136,26 @@ export default function RegisterPage() {
     }
   };
 
+  if (settingsLoading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (settings && !settings.registration_open) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center pb-20 md:pb-0 px-4">
+        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center p-8">
+          <XCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h2 className="font-display text-2xl font-bold mb-2">রেজিস্ট্রেশন বন্ধ আছে</h2>
+          <p className="text-muted-foreground text-sm">বর্তমানে রেজিস্ট্রেশন গ্রহণ করা হচ্ছে না। পরে আবার চেষ্টা করো।</p>
+        </motion.div>
+      </div>
+    );
+  }
+
   if (submitted) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center pb-20 md:pb-0 px-4">
