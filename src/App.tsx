@@ -16,6 +16,8 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminExport from "./pages/admin/AdminExport";
 import AdminScanner from "./pages/admin/AdminScanner";
+import AdminSettings from "./pages/admin/AdminSettings";
+import AdminGallery from "./pages/admin/AdminGallery";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
