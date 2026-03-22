@@ -92,6 +92,8 @@ const App = () => (
             <Route path="payments" element={<AdminPayments />} />
             <Route path="export" element={<AdminExport />} />
             <Route path="scanner" element={<AdminScanner />} />
+            <Route path="settings" element={<AdminSettings />} />
+            <Route path="gallery" element={<AdminGallery />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />

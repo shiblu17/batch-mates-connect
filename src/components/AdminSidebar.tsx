@@ -1,4 +1,4 @@
-import { LayoutDashboard, CreditCard, Download, QrCode, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, CreditCard, Download, QrCode, ArrowLeft, Settings, ImageIcon } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, Link } from "react-router-dom";
 import {
@@ -18,6 +18,8 @@ const items = [
   { title: "পেমেন্ট ভেরিফিকেশন", url: "/admin/payments", icon: CreditCard },
   { title: "ডেটা এক্সপোর্ট", url: "/admin/export", icon: Download },
   { title: "QR স্ক্যানার", url: "/admin/scanner", icon: QrCode },
+  { title: "গ্যালারি", url: "/admin/gallery", icon: ImageIcon },
+  { title: "সাইট সেটিংস", url: "/admin/settings", icon: Settings },
 ];
 
 export function AdminSidebar() {
