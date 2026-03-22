@@ -14,6 +14,7 @@ const STEPS = [
 
 export default function RegisterPage() {
   const { toast } = useToast();
+  const { data: settings, isLoading: settingsLoading } = useSiteSettings();
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
