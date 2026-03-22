@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      gallery_photos: {
+        Row: {
+          caption: string | null
+          created_at: string
+          id: string
+          uploaded_by: string | null
+          url: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          uploaded_by?: string | null
+          url: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          uploaded_by?: string | null
+          url?: string
+        }
+        Relationships: []
+      }
       registrations: {
         Row: {
           attended: boolean
@@ -65,6 +89,24 @@ export type Database = {
           tshirt_size?: string
           tx_id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      site_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
         }
         Relationships: []
       }
