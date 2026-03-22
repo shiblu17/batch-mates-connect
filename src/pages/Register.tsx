@@ -345,7 +345,7 @@ export default function RegisterPage() {
                 >
                   <p className="text-xs text-muted-foreground mb-1">টাকা পাঠাও এই নম্বরে</p>
                   <p className="font-display font-bold text-lg text-primary">
-                    {PAYMENT_NUMBERS[form.paymentMethod]}
+                    {form.paymentMethod === "bkash" ? settings?.bkash_number : settings?.nagad_number}
                   </p>
                 </motion.div>
                 <div>
