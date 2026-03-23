@@ -146,6 +146,11 @@ export default function AdminPayments() {
           </DialogHeader>
           {selected && (
             <div className="space-y-3 text-sm">
+              {selected.photo_url && (
+                <div className="rounded-lg overflow-hidden border border-border">
+                  <img src={selected.photo_url} alt="পেমেন্ট স্ক্রিনশট" className="w-full max-h-48 object-contain bg-muted" />
+                </div>
+              )}
               {[
                 ["নাম", selected.name],
                 ["রোল", selected.roll],
