@@ -30,5 +30,6 @@ export function useRegistrations() {
       if (error) throw error;
       return data as Registration[];
     },
+    staleTime: 30_000,
   });
 }

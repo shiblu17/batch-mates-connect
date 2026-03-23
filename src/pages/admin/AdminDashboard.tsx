@@ -1,9 +1,11 @@
 import { motion } from "framer-motion";
 import { Users, CreditCard, Clock, CheckCircle, UserCheck, Loader2 } from "lucide-react";
 import { useRegistrations } from "@/hooks/useRegistrations";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 export default function AdminDashboard() {
   const { data: registrations = [], isLoading } = useRegistrations();
+  const { data: settings } = useSiteSettings();
 
   if (isLoading) {
     return (
@@ -13,11 +15,12 @@ export default function AdminDashboard() {
     );
   }
 
+  const fee = typeof settings?.registration_fee === "number" ? settings.registration_fee : 500;
   const total = registrations.length;
   const verified = registrations.filter((r) => r.status === "verified").length;
   const pending = registrations.filter((r) => r.status === "pending").length;
   const attended = registrations.filter((r) => r.attended).length;
-  const collection = verified * 500;
+  const collection = verified * fee;
 
   const stats = [
     { label: "মোট রেজিস্ট্রেশন", value: total, icon: Users, color: "bg-primary/10 text-primary" },
