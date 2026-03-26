@@ -21,7 +21,7 @@ export default function Navbar() {
     <>
       {/* Desktop top bar */}
       <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
-        <div className="container flex h-14 md:h-16 items-center justify-between">
+        <div className="container flex h-14 md:h-16 items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2">
             <span className="font-display text-xl font-extrabold text-primary">JU-52</span>
             <span className="hidden sm:inline text-xs font-medium text-muted-foreground">ব্যাচ ডে</span>
@@ -105,7 +105,7 @@ export default function Navbar() {
       </header>
 
       {/* Mobile bottom bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur-md safe-area-bottom">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t-2 border-primary/20 bg-background backdrop-blur-md safe-area-bottom shadow-[0_-2px_10px_-2px_hsl(var(--foreground)/0.08)]">
         <div className="flex justify-around py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]">
           {navItems.map((item) => {
             const active = location.pathname === item.to;
