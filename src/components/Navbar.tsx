@@ -21,7 +21,7 @@ export default function Navbar() {
     <>
       {/* Desktop top bar */}
       <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
-        <div className="container flex h-14 md:h-16 items-center justify-between">
+        <div className="container flex h-14 md:h-16 items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2">
             <span className="font-display text-xl font-extrabold text-primary">JU-52</span>
             <span className="hidden sm:inline text-xs font-medium text-muted-foreground">ব্যাচ ডে</span>
