@@ -105,7 +105,7 @@ export default function Navbar() {
       </header>
 
       {/* Mobile bottom bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur-md safe-area-bottom">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t-2 border-primary/20 bg-background backdrop-blur-md safe-area-bottom shadow-[0_-2px_10px_-2px_hsl(var(--foreground)/0.08)]">
         <div className="flex justify-around py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]">
           {navItems.map((item) => {
             const active = location.pathname === item.to;
